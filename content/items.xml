@@ -1,0 +1,3 @@
+<items gfxroot="gfx/items/" version="1">
+  <active description="Wubba lubba dub dub" gfx="grav_gun.png" max_charges="1" name="GravityGun"/>
+</items>

@@ -1,20 +1,25 @@
 
 local gravgun = RegisterMod("GravityGun",1)
 local grav_gun_item = Isaac.GetItemIdByName("Gravity Gun")
-
+local player = Isaac.GetPlayer(0)
+local grabbed_flag = false
+local enemy_grabbed = nil
+local angle = 0
 function gravgun:render()
-  local player = Isaac.GetPlayer(0)
+  local aimDirection = player.GetAimDirection(player)
+
+  angle = math.rad(180) + math.atan((-aimDirection.Y),(-aimDirection.X))
+
+  if grabbed_flag and enemy_grabbed ~= nil then
+    trianglePoints = gravgun:getTrianglePoints(player.Position.X, player.Position.Y, angle, 100)
+    new_position_vector = Vector( trianglePoints.x , trianglePoints.y)
+    enemy_grabbed.Position = new_position_vector
+  end
+  -- DEBUG SHIT
   local entities = Isaac.GetRoomEntities()
   local debug_offset = 20
-  local aimDirection = player.GetAimDirection(player)
-  local angle = 180 + math.deg(math.atan((aimDirection.Y),(-aimDirection.X))) 
   Isaac.RenderText( "angle:" .. angle , 100, 10, 255,55,55,255 )
   Isaac.RenderText(player.Position.X .. ", " .. player.Position.Y, 10, debug_offset, 255, 55, 55, 255)
-  -- for i=1,#entities do
-  --if entities[i]:IsEnemy() and not entities[i]:IsBoss() and #entities > 0 then
-  --Isaac.RenderText("Entity #".. i .." at: ".. entities[i].Position.X .. ", " .. entities[i].Position.Y .. " Distance:" .. gravgun:distance(player.Position, entities[i].Position), 10, (i * 10 )+debug_offset, 255,0,0,255)
-  --end
-  --end
   gravgun:asciiDebug(createPolygon())
 end
 
@@ -27,7 +32,7 @@ function gravgun:insidePolygon(point, polygon)
   local oddNodes = false
   local j = #polygon
   for i = 1, #polygon do
-    Isaac.DebugString("Polygon #" ..i.." .. x:" .. polygon[i].x .. " y:" .. polygon[i].y)
+    --Isaac.DebugString("Polygon #" ..i.." .. x:" .. polygon[i].x .. " y:" .. polygon[i].y)
     if (polygon[i].y < point.Y and polygon[j].y >= point.Y or polygon[j].y < point.Y and polygon[i].y >= point.Y) then
       if (polygon[i].x + ( point.X - polygon[i].y ) / (polygon[j].y - polygon[i].x) * (polygon[j].x - polygon[i].x) < point.X) then
         oddNodes = not oddNodes;
@@ -35,52 +40,76 @@ function gravgun:insidePolygon(point, polygon)
     end
     j = i;
   end
-  Isaac.DebugString("Object is insidePolygon:" .. tostring(oddNodes))
+  Isaac.DebugString("Object is insidePolygon: " .. tostring(oddNodes))
   return oddNodes
 end
 
 function gravgun:asciiDebug(polygon)
   for i=1, #polygon do
-    local screenVec = Isaac.WorldToScreenPosition(Vector(polygon[i].x, polygon[i].y)) 
-    Isaac.DebugString("Polygon #" ..i.." .. x:" .. screenVec.X .. " y:" .. screenVec.Y)
+    local screenVec = Isaac.WorldToRenderPosition(Vector(polygon[i].x, polygon[i].y))
+    --Isaac.DebugString("Polygon #" ..i.." .. x:" .. screenVec.X .. " y:" .. screenVec.Y)
     Isaac.RenderText("X",screenVec.X, screenVec.Y, 255,55,55,255)
   end
 end
+
 function createPolygon()
-  local player = Isaac.GetPlayer(0)
-  local aimVector = player.GetAimDirection(player)
-  local angle = math.rad(180) + math.atan((-aimVector.Y),(-aimVector.X)) 
-  local triangleOffset = math.rad(22.5)
-
+  local triangleOffset = math.rad(27.5)
+  local radius = 200
   return {{x = player.Position.X, y = player.Position.Y}, -- Have reference to self (player) to form a triangle 
-    gravgun:getTrianglePoints(player.Position.X, player.Position.Y, (angle + triangleOffset)),
-    gravgun:getTrianglePoints(player.Position.X, player.Position.Y, (angle - triangleOffset))}
+    gravgun:getTrianglePoints(player.Position.X, player.Position.Y, (angle + triangleOffset), radius),
+    gravgun:getTrianglePoints(player.Position.X, player.Position.Y, (angle - triangleOffset), radius)}
 end
 
-function gravgun:getTrianglePoints(X,Y,angle)
+function gravgun:getTrianglePoints(X,Y,angle_with_offset, radius)
   -- Isaac.DebugString("Aim direction angle: " .. math.deg(angle))
-  local radius = 300
-  return {x = X + (radius * math.cos(angle)),
-          y = Y + (radius * math.sin(angle))}
+  return {x = X + (radius * math.cos(angle_with_offset)),
+          y = Y + (radius * math.sin(angle_with_offset))}
 
 end
 
-function gravgun:charge()
-  local player = Isaac.GetPlayer(0)
-  local entities = Isaac.GetRoomEntities()
-  for i=1,#entities do
-    if entities[i]:IsEnemy() and not entities[i]:IsBoss() and #entities > 0 then
-      local distance = gravgun:distance(player.Position, entities[i].Position)
-      Isaac.DebugString("Distance from entity #" .. i .. " is " .. distance)
-        Isaac.DebugString("Inside range")
-        if gravgun:insidePolygon(entities[i].Position, createPolygon()) then
-          Isaac.DebugString("Inside polygon")
-          entities[i]:Kill()
-        end
-    end
+function gravgun:item_use()
+  if grabbed_flag and enemy_grabbed ~= nil  then
+    gravgun:shoot()
+  else
+    gravgun:charge()
   end
 end
 
+function gravgun:shoot()
+  grabbed_flag = false
+  enemy_grabbed = nil
+end
+
+function gravgun:charge()
+  local entities = Isaac.GetRoomEntities()
+  local closest_enemy = nil
+  local closest_distance = 400
+  for i=1,#entities do
+    if entities[i]:IsEnemy() and not entities[i]:IsBoss() and #entities > 0 then
+      local distance = gravgun:distance(player.Position, entities[i].Position)
+
+      Isaac.DebugString("Distance from entity #" .. i .. " is " .. distance)
+      if gravgun:insidePolygon(entities[i].Position, createPolygon()) then
+        if distance < closest_distance then
+          closest_enemy = entities[i]
+          closest_distance = distance
+        end
+      end
+    end
+  end
+  if closest_enemy ~= nil  then
+    enemy_grabbed = closest_enemy
+    grabbed_flag = true
+    gravgun:addEffects()
+  end
+end
+
+function gravgun:addEffects()
+  enemy_grabbed:AddSlowing(enemy_grabbed, 10, 9999, Color(10,10,10,10,10,10))
+  enemy_grabbed:AddFear(enemy_grabbed, 10)
+  enemy_grabbed:AddConfusion(enemy_grabbed, 10)
+  enemy_grabbed:AddFreeze(enemy_grabbed,10)
+end
 gravgun:AddCallback(ModCallbacks.MC_POST_RENDER, gravgun.render)
-gravgun:AddCallback(ModCallbacks.MC_USE_ITEM, gravgun.charge, grav_gun_item)
+gravgun:AddCallback(ModCallbacks.MC_USE_ITEM, gravgun.item_use, grav_gun_item)
 Isaac.DebugString("Mod was successfully loaded")

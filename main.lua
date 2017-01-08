@@ -7,7 +7,6 @@ enemy_grabbed = nil
 angle = 0
 function gravgun:render()
      local aimDirection = player.GetAimDirection(player)
-
      angle = math.rad(180) + math.atan((-aimDirection.Y),(-aimDirection.X))
 
      if grabbed_flag and enemy_grabbed ~= nil then
@@ -28,20 +27,37 @@ function gravgun:distance(vector1, vector2)
 end
 
 function gravgun:insidePolygon(point, polygon)
-  --Reference http://alienryderflex.com/polygon/
-  local oddNodes = false
-  local j = #polygon
-  for i = 1, #polygon do
-    --Isaac.DebugString("Polygon #" ..i.." .. x:" .. polygon[i].x .. " y:" .. polygon[i].y)
-    if (polygon[i].Y < point.Y and polygon[j].Y >= point.Y or polygon[j].Y < point.Y and polygon[i].Y >= point.Y) then
-      if (polygon[i].X + ( point.X - polygon[i].Y ) / (polygon[j].Y - polygon[i].X) * (polygon[j].X - polygon[i].X) < point.X) then
-        oddNodes = not oddNodes;
-      end
-    end
-    j = i;
+  --Reference http://alienryderflex.com/polygon/ worked most of the time so I opted for the barycentric technique explained further in..
+  --https://blogs.msdn.microsoft.com/rezanour/2011/08/07/barycentric-coordinates-and-point-in-triangle-tests/
+  local inside_triangle = false
+  local a = polygon[1]
+  local b = polygon[2]
+  local c = polygon[3]
+
+  local u = polygon[2] - polygon[1]
+  local v = polygon[3] - polygon[1]
+  local w = point - polygon[1]
+
+  local vCrossW = v:Cross(w)
+  local vCrossU = v:Cross(u)
+
+  if w:Dot(u) < 0  then
+    return false
   end
-  Isaac.DebugString("Object is insidePolygon: " .. tostring(oddNodes))
-  return oddNodes
+
+  local uCrossW = u:Cross(w)
+  local uCrossV = u:Cross(v)
+
+  if(uCrossW * uCrossV < 0)then
+    Isaac.RenderText("It's happenging", 100, 100, 100, 100, 100 ,100)
+    Isaac.DebugString("cross value" .. uCrossW * uCrossV)
+    return false
+  end
+
+  local r = vCrossW / uCrossV
+  local t = uCrossW / uCrossV
+
+  return (r + t <= 1) and polygon[1]:Distance(point) <= 200
 end
 
 function gravgun:asciiDebug(polygon)

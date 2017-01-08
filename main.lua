@@ -6,11 +6,11 @@ grabbed_flag = false
 enemy_grabbed = nil
 angle = 0
 function gravgun:render()
-     local aimDirection = player.GetAimDirection(player)
-     angle = math.rad(180) + math.atan((-aimDirection.Y),(-aimDirection.X))
+  local aimDirection = player:GetAimDirection()
+  angle = math.rad(180) + math.atan((-aimDirection.Y),(-aimDirection.X))
 
-     if grabbed_flag and enemy_grabbed ~= nil then
-    trianglePoints = gravgun:getTrianglePoints(player.Position.X, player.Position.Y, angle, 100)
+  if grabbed_flag and enemy_grabbed ~= nil then
+    trianglePoints = gravgun:getTrianglePoints(player.Position.X, player.Position.Y, angle, 90)
     new_position_vector = trianglePoints
     enemy_grabbed.Position = new_position_vector
   end
@@ -22,18 +22,10 @@ function gravgun:render()
   gravgun:asciiDebug(createPolygon())
 end
 
-function gravgun:distance(vector1, vector2)
-  return math.sqrt((vector2.X - vector1.X)^2 + (vector2.Y - vector1.Y)^2)
-end
 
 function gravgun:insidePolygon(point, polygon)
   --Reference http://alienryderflex.com/polygon/ worked most of the time so I opted for the barycentric technique explained further in..
   --https://blogs.msdn.microsoft.com/rezanour/2011/08/07/barycentric-coordinates-and-point-in-triangle-tests/
-  local inside_triangle = false
-  local a = polygon[1]
-  local b = polygon[2]
-  local c = polygon[3]
-
   local u = polygon[2] - polygon[1]
   local v = polygon[3] - polygon[1]
   local w = point - polygon[1]
@@ -49,8 +41,6 @@ function gravgun:insidePolygon(point, polygon)
   local uCrossV = u:Cross(v)
 
   if(uCrossW * uCrossV < 0)then
-    Isaac.RenderText("It's happenging", 100, 100, 100, 100, 100 ,100)
-    Isaac.DebugString("cross value" .. uCrossW * uCrossV)
     return false
   end
 
@@ -63,7 +53,6 @@ end
 function gravgun:asciiDebug(polygon)
   for i=1, #polygon do
     local screenVec = Isaac.WorldToRenderPosition(polygon[i])
-    --Isaac.DebugString("Polygon #" ..i.." .. x:" .. screenVec.X .. " y:" .. screenVec.Y)
     Isaac.RenderText("X",screenVec.X, screenVec.Y, 255,55,55,255)
   end
 
@@ -71,7 +60,7 @@ function gravgun:asciiDebug(polygon)
   for i = 1, #entities do
     if entities[i]:IsEnemy() then
       local debugVec = Isaac.WorldToRenderPosition(entities[i].Position)
-      Isaac.RenderText(tostring(gravgun:insidePolygon(entities[i].Position,createPolygon())), debugVec.X, debugVec.Y, 255,50,50,255)      
+      Isaac.RenderText(tostring(gravgun:insidePolygon(entities[i].Position,createPolygon())), debugVec.X, debugVec.Y, 255,50,50,255)
     end
   end
 end
@@ -85,9 +74,7 @@ function createPolygon()
 end
 
 function gravgun:getTrianglePoints(X,Y,angle_with_offset, radius)
-  -- Isaac.DebugString("Aim direction angle: " .. math.deg(angle))
   return Vector( X + (radius * math.cos(angle_with_offset)), Y + (radius * math.sin(angle_with_offset)))
-
 end
 
 function gravgun:item_use()
@@ -99,19 +86,19 @@ function gravgun:item_use()
 end
 
 function gravgun:shoot()
+  enemy_grabbed.Position = (Vector(1000,1000))
   grabbed_flag = false
   enemy_grabbed = nil
 end
 
+
 function gravgun:charge()
   local entities = Isaac.GetRoomEntities()
   local closest_enemy = nil
-  local closest_distance = 400
+  local closest_distance = 200
   for i=1,#entities do
     if entities[i]:IsEnemy() and not entities[i]:IsBoss() and #entities > 0 then
-      local distance = gravgun:distance(player.Position, entities[i].Position)
-
-      Isaac.DebugString("Distance from entity #" .. i .. " is " .. distance)
+      local distance = player.Position:Distance(entities[i].Position)
       if gravgun:insidePolygon(entities[i].Position, createPolygon()) then
         if distance < closest_distance then
           closest_enemy = entities[i]
@@ -123,17 +110,11 @@ function gravgun:charge()
   if closest_enemy ~= nil  then
     enemy_grabbed = closest_enemy
     grabbed_flag = true
-    gravgun:addEffects()
+    enemy_grabbed:AddSlowing(EntityRef(enemy_grabbed),10000, 9999, Color(10,10,10,10,10,10,10))
+    enemy_grabbed:AddFreeze(EntityRef(enemy_grabbed),10000)
   end
 end
 
-function gravgun:addEffects()
-  enemy_grabbed:AddSlowing(enemy_grabbed, 10, 9999, Color(10,10,10,10,10,10))
-  enemy_grabbed:AddFear(enemy_grabbed, 10)
-  enemy_grabbed:AddConfusion(enemy_grabbed, 10)
-  enemy_grabbed:AddFreeze(enemy_grabbed,10)
-  enemy_grabbed.AddBurn(enemy_grabbed, 10,10)
-end
 gravgun:AddCallback(ModCallbacks.MC_POST_RENDER, gravgun.render)
 gravgun:AddCallback(ModCallbacks.MC_USE_ITEM, gravgun.item_use, grav_gun_item)
 Isaac.DebugString("Mod was successfully loaded")

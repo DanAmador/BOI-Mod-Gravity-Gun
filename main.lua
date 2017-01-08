@@ -1,18 +1,18 @@
 
 local gravgun = RegisterMod("GravityGun",1)
 local grav_gun_item = Isaac.GetItemIdByName("Gravity Gun")
-local player = Isaac.GetPlayer(0)
-local grabbed_flag = false
-local enemy_grabbed = nil
-local angle = 0
+player = Isaac.GetPlayer(0)
+grabbed_flag = false
+enemy_grabbed = nil
+angle = 0
 function gravgun:render()
-  local aimDirection = player.GetAimDirection(player)
+     local aimDirection = player.GetAimDirection(player)
 
-  angle = math.rad(180) + math.atan((-aimDirection.Y),(-aimDirection.X))
+     angle = math.rad(180) + math.atan((-aimDirection.Y),(-aimDirection.X))
 
-  if grabbed_flag and enemy_grabbed ~= nil then
+     if grabbed_flag and enemy_grabbed ~= nil then
     trianglePoints = gravgun:getTrianglePoints(player.Position.X, player.Position.Y, angle, 100)
-    new_position_vector = Vector( trianglePoints.x , trianglePoints.y)
+    new_position_vector = trianglePoints
     enemy_grabbed.Position = new_position_vector
   end
   -- DEBUG SHIT
@@ -33,8 +33,8 @@ function gravgun:insidePolygon(point, polygon)
   local j = #polygon
   for i = 1, #polygon do
     --Isaac.DebugString("Polygon #" ..i.." .. x:" .. polygon[i].x .. " y:" .. polygon[i].y)
-    if (polygon[i].y < point.Y and polygon[j].y >= point.Y or polygon[j].y < point.Y and polygon[i].y >= point.Y) then
-      if (polygon[i].x + ( point.X - polygon[i].y ) / (polygon[j].y - polygon[i].x) * (polygon[j].x - polygon[i].x) < point.X) then
+    if (polygon[i].Y < point.Y and polygon[j].Y >= point.Y or polygon[j].Y < point.Y and polygon[i].Y >= point.Y) then
+      if (polygon[i].X + ( point.X - polygon[i].Y ) / (polygon[j].Y - polygon[i].X) * (polygon[j].X - polygon[i].X) < point.X) then
         oddNodes = not oddNodes;
       end
     end
@@ -46,24 +46,31 @@ end
 
 function gravgun:asciiDebug(polygon)
   for i=1, #polygon do
-    local screenVec = Isaac.WorldToRenderPosition(Vector(polygon[i].x, polygon[i].y))
+    local screenVec = Isaac.WorldToRenderPosition(polygon[i])
     --Isaac.DebugString("Polygon #" ..i.." .. x:" .. screenVec.X .. " y:" .. screenVec.Y)
     Isaac.RenderText("X",screenVec.X, screenVec.Y, 255,55,55,255)
+  end
+
+  local entities = Isaac.GetRoomEntities()
+  for i = 1, #entities do
+    if entities[i]:IsEnemy() then
+      local debugVec = Isaac.WorldToRenderPosition(entities[i].Position)
+      Isaac.RenderText(tostring(gravgun:insidePolygon(entities[i].Position,createPolygon())), debugVec.X, debugVec.Y, 255,50,50,255)      
+    end
   end
 end
 
 function createPolygon()
   local triangleOffset = math.rad(27.5)
   local radius = 200
-  return {{x = player.Position.X, y = player.Position.Y}, -- Have reference to self (player) to form a triangle 
-    gravgun:getTrianglePoints(player.Position.X, player.Position.Y, (angle + triangleOffset), radius),
-    gravgun:getTrianglePoints(player.Position.X, player.Position.Y, (angle - triangleOffset), radius)}
+  return {player.Position, -- Have reference to self (player) to form a triangle
+          gravgun:getTrianglePoints(player.Position.X, player.Position.Y, (angle + triangleOffset), radius),
+          gravgun:getTrianglePoints(player.Position.X, player.Position.Y, (angle - triangleOffset), radius)}
 end
 
 function gravgun:getTrianglePoints(X,Y,angle_with_offset, radius)
   -- Isaac.DebugString("Aim direction angle: " .. math.deg(angle))
-  return {x = X + (radius * math.cos(angle_with_offset)),
-          y = Y + (radius * math.sin(angle_with_offset))}
+  return Vector( X + (radius * math.cos(angle_with_offset)), Y + (radius * math.sin(angle_with_offset)))
 
 end
 
@@ -109,6 +116,7 @@ function gravgun:addEffects()
   enemy_grabbed:AddFear(enemy_grabbed, 10)
   enemy_grabbed:AddConfusion(enemy_grabbed, 10)
   enemy_grabbed:AddFreeze(enemy_grabbed,10)
+  enemy_grabbed.AddBurn(enemy_grabbed, 10,10)
 end
 gravgun:AddCallback(ModCallbacks.MC_POST_RENDER, gravgun.render)
 gravgun:AddCallback(ModCallbacks.MC_USE_ITEM, gravgun.item_use, grav_gun_item)

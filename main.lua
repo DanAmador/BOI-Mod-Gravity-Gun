@@ -4,15 +4,34 @@ local grav_gun_item = Isaac.GetItemIdByName("Gravity Gun")
 player = Isaac.GetPlayer(0)
 grabbed_flag = false
 enemy_grabbed = nil
-angle = 0
+thrown_vector = nil
+angle, counter = 0,0
+
 function gravgun:render()
   local aimDirection = player:GetAimDirection()
+  local delta_move = 8
+  local entities = Isaac.GetRoomEntities()
   angle = math.rad(180) + math.atan((-aimDirection.Y),(-aimDirection.X))
 
-  if grabbed_flag and enemy_grabbed ~= nil then
+  if enemy_grabbed ~= nil then
+    if grabbed_flag then
     trianglePoints = gravgun:getTrianglePoints(player.Position.X, player.Position.Y, angle, 90)
     new_position_vector = trianglePoints
     enemy_grabbed.Position = new_position_vector
+    else
+      if counter <= delta_move then
+        counter = counter + 1
+        enemy_grabbed.Position =  lerp(enemy_grabbed.Position,thrown_vector,1/delta_move)
+
+        for i = 1, #entities do
+          if entities[i]:IsEnemy() and enemy_grabbed.Position:Distance(entities[i].Position) < 50 then
+            entities[i]:TakeDamage(5 + (player.Damage  + player.ShotSpeed * 5)/5,0, EntityRef(enemy_grabbed), 10)
+          end
+        end
+      else
+        enemy_grabbed = nil
+      end
+    end
   end
   -- DEBUG SHIT
   local entities = Isaac.GetRoomEntities()
@@ -22,7 +41,9 @@ function gravgun:render()
   gravgun:asciiDebug(createPolygon())
 end
 
-
+function lerp(a,b,t)
+  return a + (b -a) * t
+end
 function gravgun:insidePolygon(point, polygon)
   --Reference http://alienryderflex.com/polygon/ worked most of the time so I opted for the barycentric technique explained further in..
   --https://blogs.msdn.microsoft.com/rezanour/2011/08/07/barycentric-coordinates-and-point-in-triangle-tests/
@@ -86,9 +107,10 @@ function gravgun:item_use()
 end
 
 function gravgun:shoot()
-  enemy_grabbed.Position = (Vector(1000,1000))
+  distance = 350
+  counter = 0
+  thrown_vector = Vector(enemy_grabbed.Position.X + math.cos(angle) * distance * player.ShotSpeed , enemy_grabbed.Position.Y + math.sin(angle) * distance * player.ShotSpeed)
   grabbed_flag = false
-  enemy_grabbed = nil
 end
 
 

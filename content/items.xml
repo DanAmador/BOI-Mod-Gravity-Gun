@@ -1,5 +1,5 @@
 <items gfxroot="gfx/items/" version="1">
-<active description="Wubba lubba dub dub" gfx="grav_gun_gimp.png" max_charges="1" name="Gravity Gun"/>
+  <active description="Wubba lubba dub dub" gfx="grav_gun_gimp.png" max_charges="1" name="Gravity Gun" id="101234"/>
 </items>
 
     

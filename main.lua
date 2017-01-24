@@ -23,15 +23,13 @@ if player:HasCollectible(grav_gun_item) then
   if room ~= prevRoom then ResetGun() end
   if grav_gun == nil then grav_gun = Isaac.Spawn(grav_gun_entity,0,0,Vector(player.Position.X + (math.cos(angle) * 25), player.Position.Y + (math.sin(angle) * 25)- 10),Vector(0,0),nil) end
   prevRoom = room
-  sprite = grav_gun:GetSprite()  
+  sprite = grav_gun:GetSprite()
   grav_gun.Position = Vector(player.Position.X + (math.cos(angle) * 25),  player.Position.Y + (math.sin(angle) * 25) - 10);
   grav_gun.SpriteRotation = math.deg(angle)
-  -- grav_gun.PositionOffset = Vector(25,-10)
 
   if enemy_grabbed ~= nil then
     if grabbed_flag then
-   sprite:Play("grav_gun_charge", true)
-    
+    sprite:Play("grav_gun_charge", true)
     trianglePoints = grav_gun_mod:getTrianglePoints(player.Position.X, player.Position.Y, angle, 90)
     new_position_vector = trianglePoints
     enemy_grabbed.Position = new_position_vector
@@ -49,18 +47,10 @@ if player:HasCollectible(grav_gun_item) then
         enemy_grabbed = nil
       end
     end
-  
   end
   else
-  sprite:Play("grav_gun_idle",true)
   end
-
-  -- DEBUG SHIT
-  local entities = Isaac.GetRoomEntities()
-  local debug_offset = 20
-  Isaac.RenderText( "angle:" .. angle , 100, 10, 255,55,55,255 )
-  Isaac.RenderText(player.Position.X .. ", " .. player.Position.Y, 10, debug_offset, 255, 55, 55, 255)
-  grav_gun_mod:asciiDebug(createPolygon())
+ --grav_gun_mod:asciiDebug(createPolygon())
 end
 
 function ResetGun()
@@ -102,6 +92,12 @@ function grav_gun_mod:insidePolygon(point, polygon)
 end
 
 function grav_gun_mod:asciiDebug(polygon)
+  -- DEBUG SHIT
+  local player = Isaac.GetPlayer(0)
+  local entities = Isaac.GetRoomEntities()
+  local debug_offset = 20
+  Isaac.RenderText( "angle:" .. angle , 100, 10, 255,55,55,255 )
+  Isaac.RenderText(player.Position.X .. ", " .. player.Position.Y, 10, debug_offset, 255, 55, 55, 255) 
   for i=1, #polygon do
     local screenVec = Isaac.WorldToRenderPosition(polygon[i])
     Isaac.RenderText("X",screenVec.X, screenVec.Y, 255,55,55,255)
@@ -172,4 +168,3 @@ end
 
 grav_gun_mod:AddCallback(ModCallbacks.MC_POST_RENDER, grav_gun_mod.render)
 grav_gun_mod:AddCallback(ModCallbacks.MC_USE_ITEM, grav_gun_mod.item_use, grav_gun_item)
-Isaac.DebugString("Mod was successfully loaded")

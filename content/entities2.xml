@@ -1,5 +1,5 @@
 <entities anm2root="gfx/effects/" version="5">
-  <entity anm2path="gravgun.anm2" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="3" collisionRadius="8" friction="1" id="101234" name="Gravity Gun" numGridCollisionPoints="0" shadowSize="10" stageHP="0" variant="0">
+  <entity anm2path="gravgun.anm2" shutdoors="false" baseHP="0" boss="0" champion="0" collisionDamage="0" collisionMass="3" collisionRadius="8" friction="1" id="101234" name="Gravity Gun" numGridCollisionPoints="0" shadowSize="10" stageHP="0" variant="0">
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
     </entity>
 </entities>

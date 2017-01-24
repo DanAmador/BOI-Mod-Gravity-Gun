@@ -7,5 +7,5 @@
 ### Licensed copy of [Binding of Isaac Rebirth](http://store.steampowered.com/app/401920/) and both of its DLCs Afterbirth and Afterbirth+
 
 # Demo
-![](http://i.giphy.com/l3q2UtmlVpYes6Z32.gif)
-![](http://i.giphy.com/3LcSjBtNVV2eI.gif)
+![](./demo/giphy2.gif)
+![](./demo/giphy.gif)

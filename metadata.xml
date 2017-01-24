@@ -1,8 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <metadata>
-	<name>gravitygun</name>
-	<directory>gravitygun</directory>
-	<description/>
-	<version>1.0</version>
-	<visibility/>
-</metadata>
+    <name>Gravity Gun</name>
+    <directory>gravity gun</directory>
+    <id>849295534</id>
+    <description>A new weapon  for Binding of Isaac!
 
+Straight from Eli Vance's laboratory the Zero Point Energy Field Manipulator (ZPEFM), or commonly known as the Gravity Gun, offers a new edge in modern warfare, go get your own at a Devil Store near you! </description>
+    <version>1.2</version>
+    <visibility>Public</visibility>
+    <tag id="Lua"/>
+    <tag id="Items"/>
+    <tag id="Active Items"/>
+</metadata>

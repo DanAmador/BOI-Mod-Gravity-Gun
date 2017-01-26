@@ -40,7 +40,7 @@ if player:HasCollectible(grav_gun_item) then
 
         for i = 1, #entities do
           if entities[i]:IsEnemy() and enemy_grabbed.Position:Distance(entities[i].Position) < 50 then
-            entities[i]:TakeDamage(5 + (player.Damage  + player.ShotSpeed * 5)/5,0, EntityRef(enemy_grabbed), 10)
+            entities[i]:TakeDamage( (player.Damage  + player.ShotSpeed * 5)/6,0, EntityRef(enemy_grabbed), 10)
           end
         end
       else
